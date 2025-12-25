@@ -1,6 +1,10 @@
-def main():
-    print("Hello from chatterbox-project!")
+import torchaudio as ta
+from chatterbox.tts_turbo import ChatterboxTurboTTS
 
+model = ChatterboxTurboTTS.from_pretrained(device="cuda")
 
-if __name__ == "__main__":
-    main()
+text = "Hello, this is a test for PowerPoint presentation."
+
+wav = model.generate(text)
+
+ta.save("/mnt/c/Users/cclif/Desktop/output.wav", wav, model.sr)
