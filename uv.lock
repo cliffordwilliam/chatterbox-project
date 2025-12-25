@@ -346,10 +346,16 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "chatterbox-tts" },
+    { name = "torch" },
+    { name = "torchaudio" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "chatterbox-tts", specifier = ">=0.1.6" }]
+requires-dist = [
+    { name = "chatterbox-tts", specifier = ">=0.1.6" },
+    { name = "torch", specifier = ">=2.6.0" },
+    { name = "torchaudio", specifier = ">=2.6.0" },
+]
 
 [[package]]
 name = "chatterbox-tts"
