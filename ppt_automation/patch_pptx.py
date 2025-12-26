@@ -9,6 +9,11 @@ from pathlib import Path
 import tomllib
 import win32com.client
 
+TRANSITION_MAP = {
+    "fade": 1793,   # ppEffectFade
+    "morph": 3956,   # ppEffectMorph
+}
+
 
 def patch_powerpoint(pptx_path: str, durations: list[float]):
     pptx_path = str(Path(pptx_path).resolve())
@@ -21,7 +26,12 @@ def patch_powerpoint(pptx_path: str, durations: list[float]):
 
         for i in range(1, presentation.Slides.Count + 1):
             slide = presentation.Slides(i)
-            slide.SlideShowTransition.EntryEffect = 3956
+
+            slide_data = data["slides"][i - 1] if i - 1 < len(data["slides"]) else {}
+            transition_name = slide_data.get("transition", "fade").lower()
+            entry_effect = TRANSITION_MAP.get(transition_name, 1793)
+
+            slide.SlideShowTransition.EntryEffect = entry_effect
             slide.SlideShowTransition.Duration = 1.5
 
             if i - 1 < len(durations):

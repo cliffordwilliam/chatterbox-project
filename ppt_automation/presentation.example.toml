@@ -11,6 +11,7 @@ def generate_presentation(json_path: str, output_path: str):
         slides = json.load(f)
 """
 voice = "First, we load the JSON file containing our slide data and parse it into a Python dictionary"
+transition = "fade"
 
 [[slides]]
 lang = "python"
@@ -19,6 +20,7 @@ model = ChatterboxTurboTTS.from_pretrained(device=\"cuda\")
 prs = Presentation()
 """
 voice = "Next, we initialize the TTS model on CUDA for fast generation, and create a new PowerPoint presentation object"
+transition = "morph"
 
 [[slides]]
 lang = "python"
@@ -28,3 +30,4 @@ for slide_data in slides:
     slide.shapes.title.text = slide_data['title']
 """
 voice = "Finally, we loop through each slide in our data, add it to the presentation, and set the title text"
+transition = "fade"
