@@ -8,6 +8,7 @@ dependencies = [
     "chatterbox-tts>=0.1.6",
     "onnx<1.17.0",
     "python-pptx>=1.0.2",
+    "tomli>=2.3.0",
     "torch>=2.6.0",
     "torchaudio>=2.6.0",
 ]
