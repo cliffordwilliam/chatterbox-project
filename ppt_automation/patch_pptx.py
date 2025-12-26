@@ -15,23 +15,14 @@ def patch_powerpoint(pptx_path: str, durations: list[float]):
     ppt = win32com.client.Dispatch("PowerPoint.Application")
     ppt.Visible = True
 
-    # Numeric constant for media shape
-    MSO_MEDIA = 16
-
     try:
         presentation = ppt.Presentations.Open(pptx_path)
         print(f"Opened presentation: {presentation.Name}, slides: {presentation.Slides.Count}")
 
         for i in range(1, presentation.Slides.Count + 1):
             slide = presentation.Slides(i)
-
-            for shape in slide.Shapes:
-                if shape.Type == MSO_MEDIA:
-                    print(f"  Slide {i}: Setting audio to autoplay")
-
-                    # Play audio automatically when slide appears
-                    shape.AnimationSettings.PlaySettings.PlayOnEntry = True
-                    shape.AnimationSettings.PlaySettings.HideWhileNotPlaying = True
+            slide.SlideShowTransition.EntryEffect = 3956
+            slide.SlideShowTransition.Duration = 1.5
 
             # Apply slide transition timing if duration exists
             if i - 1 < len(durations):
