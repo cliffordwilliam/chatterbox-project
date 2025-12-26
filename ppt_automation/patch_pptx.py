@@ -24,7 +24,6 @@ def patch_powerpoint(pptx_path: str, durations: list[float]):
             slide.SlideShowTransition.EntryEffect = 3956
             slide.SlideShowTransition.Duration = 1.5
 
-            # Apply slide transition timing if duration exists
             if i - 1 < len(durations):
                 audio_duration = durations[i - 1]
                 transition_time = audio_duration + 1.0
@@ -36,6 +35,18 @@ def patch_powerpoint(pptx_path: str, durations: list[float]):
                 )
             else:
                 print(f"  Slide {i}: No duration found, skipping timing")
+        
+            for shape in slide.Shapes:
+                if shape.Type == 16:
+                    print(f"  Slide {i}: Adding animation to play audio automatically")
+                    effect = slide.TimeLine.MainSequence.AddEffect(
+                        shape,
+                        83,
+                        0,
+                        0,
+                    )
+                    effect.Timing.TriggerType = 2
+
 
         presentation.Save()
         presentation.Close()
