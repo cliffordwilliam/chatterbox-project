@@ -3,7 +3,7 @@ from chatterbox.tts_turbo import ChatterboxTurboTTS
 
 model = ChatterboxTurboTTS.from_pretrained(device="cuda")
 
-text = "Hello, this is a test for PowerPoint presentation."
+text = "Hi there, Sarah here from MochaFone calling you back [chuckle], have you got one minute to chat about the billing issue?"
 
 wav = model.generate(text)
 
