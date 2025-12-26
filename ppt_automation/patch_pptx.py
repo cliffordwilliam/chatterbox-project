@@ -26,7 +26,7 @@ def patch_powerpoint(pptx_path: str, durations: list[float]):
 
             if i - 1 < len(durations):
                 audio_duration = durations[i - 1]
-                transition_time = audio_duration + 1.0
+                transition_time = audio_duration + 0.5
                 slide.SlideShowTransition.AdvanceOnTime = True
                 slide.SlideShowTransition.AdvanceTime = transition_time
                 print(
@@ -46,6 +46,7 @@ def patch_powerpoint(pptx_path: str, durations: list[float]):
                         0,
                     )
                     effect.Timing.TriggerType = 2
+                    shape.AnimationSettings.PlaySettings.HideWhileNotPlaying = True
 
 
         presentation.Save()
