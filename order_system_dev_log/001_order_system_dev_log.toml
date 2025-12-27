@@ -1,0 +1,156 @@
+[[slides]]
+lang = "md"
+text = """
+# Order System Dev Log #1
+## Foundation and Technology Choices
+"""
+voice = "This dev log covers the foundation of an order management system I am building for a real business. I explain the problem, the technology stack, and the architectural decisions."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Project Context
+- Building for family business (real problem, forgiving client)
+- Doubles as portfolio work for employers
+- Documents real engineering decisions
+- Public accountability through dev logs
+"""
+voice = "Quick context. I am building this for a family business. The problem is real, but the client is forgiving. This doubles as portfolio work. These videos document real engineering decisions and serve as public accountability."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# The Problem
+Small business runs entirely on paper
+- Every order written by hand
+- No historical data for analysis
+- No pattern recognition possible
+- Physical records can be lost
+"""
+voice = "The problem. A small business runs entirely on paper. Every order is written by hand. No historical data exists. No way to spot trends or analyze patterns. Physical records can be lost or damaged."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Core Requirements
+- Digital order entry and storage
+- Browser based, any device
+- Queryable historical data
+- Eventually: offline capability (PWA + SQLite)
+"""
+voice = "Core requirements. Digital order entry with persistent storage. Browser based so it works on any device. Queryable historical data so they can analyze patterns. Eventually I will add offline support through a progressive web app with SQLite. But that comes later."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Technology Stack
+**Backend:**
+- Node.js + TypeScript
+- Fastify + Typebox
+- PostgreSQL + Drizzle ORM
+
+**Infrastructure:**
+- Docker for consistency
+- Railway for managed Postgres and deployment
+"""
+voice = "The technology stack. Node with TypeScript for the backend. Fastify with Typebox for request validation and type safe routing. Postgres with Drizzle ORM for type safe queries and relational integrity. Docker for environment consistency. Railway for managed Postgres and deployment."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Why Node and TypeScript?
+- I am already proficient
+- Mature ecosystem, extensive libraries
+- Railway has excellent Node support
+- Single language across frontend and backend
+"""
+voice = "Why Node and TypeScript? I am already proficient, so I can move fast. The ecosystem is mature with extensive libraries. Railway has excellent Node support. And I get a single language across frontend and backend."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Why Fastify over Express?
+- Built in JSON schema validation via Typebox
+- Type safe routing out of the box
+- Better developer experience for this use case
+"""
+voice = "Why Fastify over Express? Built in JSON schema validation through Typebox. Type safe routing without extra configuration. Better developer experience for what I need."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Why Postgres?
+- Railway provisions it as managed service
+- Automatic backups and connection pooling
+- Relational integrity for orders, customers, items
+- Proven reliability at scale
+"""
+voice = "Why Postgres? Railway provisions it as a managed service. Automatic backups and connection pooling included. Relational integrity matters for orders, customers, and items. Postgres is proven and reliable at scale."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Why Drizzle ORM?
+- Type safe queries catch errors at compile time
+- Lightweight, minimal overhead
+- Schema migrations built in
+- Better DX than raw SQL for this project
+"""
+voice = "Why Drizzle ORM? Type safe queries catch errors at compile time. Lightweight with minimal overhead. Schema migrations are built in. Better developer experience than raw SQL for this project size."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Why Docker?
+- Development and production parity
+- Consistent environment across machines
+- Simplified deployment process
+- Platform agnostic
+"""
+voice = "Why Docker? Development and production parity. The same environment runs on my machine and in production. Simplified deployment. Platform agnostic if I need to move infrastructure later."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Why Railway?
+- Managed Postgres (no server maintenance)
+- Simple deployment from GitHub
+- Free tier sufficient for now
+- Easy to migrate if needed
+"""
+voice = "Why Railway? Managed Postgres means I am not maintaining database servers. Simple deployment from GitHub. The free tier is sufficient for now. And migration to another platform is straightforward if needed."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Architecture Principles
+- Stateless backend for simplicity
+- Postgres as single source of truth
+- Build only what is needed now
+- Optimize for my own debugging experience
+"""
+voice = "Architecture principles. The backend is stateless for simplicity and predictability. Postgres is the single source of truth. No distributed state. I build only what is needed now. No premature abstractions. And I optimize for my own debugging experience since I maintain this myself."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# What This Covered
+- Real problem and client context
+- Core requirements for the system
+- Technology stack and reasoning for each choice
+- Architecture principles guiding implementation
+"""
+voice = "That covers the foundation. The real problem and client context. Core requirements. The technology stack with reasoning for each choice. And architecture principles that guide implementation."
+transition = "fade"

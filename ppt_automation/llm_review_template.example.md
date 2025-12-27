@@ -207,13 +207,14 @@ The TOML below includes comments describing the expected schema.
 
 # TOML Schema Reference
 ```toml
-# Supported langs: python, js, ts, cpp, c, java, html, xml, css, bash, sh, md
+# Supported langs: py, js, ts, cpp, java, html, css, sh, md
 # highlight: starting index is 1
 # transitions: fade, morph
 # Paralinguistic Tags: [clear throat], [sigh], [shush], [cough], [groan], [sniff], [gasp], [chuckle], [laugh]
 
 [[slides]]
 lang = "md"
+highlight = [1]
 text = """
 [Slide content in markdown]
 """

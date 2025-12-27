@@ -57,7 +57,7 @@ def hex_to_rgb(hex_color: str) -> RGBColor:
     )
 
 
-def build_color_map(style_name="monokai"):
+def build_color_map(style_name="dracula"):
     style = get_style_by_name(style_name)
     color_map = {}
 
@@ -78,7 +78,7 @@ def add_code_with_highlighting(
 ):
     highlight_lines = set(highlight_lines or [])
     lexer = get_lexer_by_name(lang, stripall=False)
-    color_map = build_color_map("monokai")
+    color_map = build_color_map("dracula")
 
     text_frame.clear()
 
@@ -100,7 +100,7 @@ def add_code_with_highlighting(
 
             run.font.color.rgb = color_map.get(t, RGBColor(255, 255, 255))
 
-            if not is_highlight:
+            if highlight_lines and not is_highlight:
                 run.font.color.brightness = -0.6
 
 
