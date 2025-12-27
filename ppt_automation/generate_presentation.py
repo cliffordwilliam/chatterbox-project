@@ -81,9 +81,14 @@ def add_code_with_highlighting(
     color_map = build_color_map("dracula")
 
     text_frame.clear()
+    paragraphs = text_frame.paragraphs
 
     for i, line in enumerate(code.splitlines(), start=1):
-        p = text_frame.add_paragraph()
+        if i == 1:
+            p = paragraphs[0]
+        else:
+            p = text_frame.add_paragraph()
+
         p.line_spacing = 1.0
 
         is_highlight = i in highlight_lines

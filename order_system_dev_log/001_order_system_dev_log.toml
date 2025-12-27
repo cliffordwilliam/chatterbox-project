@@ -152,5 +152,5 @@ text = """
 - Technology stack and reasoning for each choice
 - Architecture principles guiding implementation
 """
-voice = "That covers the foundation. The real problem and client context. Core requirements. The technology stack with reasoning for each choice. And architecture principles that guide implementation."
+voice = "And that concludes this dev log. We covered the real problem and client context, the system’s core requirements, the chosen technology stack, and the architecture principles guiding implementation."
 transition = "fade"
