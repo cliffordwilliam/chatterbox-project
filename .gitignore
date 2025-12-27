@@ -10,3 +10,4 @@ wheels/
 .venv
 
 ppt_automation/presentation.toml
+ppt_automation/llm_review_template.md

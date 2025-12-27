@@ -1,5 +1,3 @@
-Is this a good template for llm?
-
 # Dev Log Review Template
 
 **Context**
