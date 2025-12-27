@@ -48,6 +48,7 @@ However:
 - Keep the content aligned with an audience of developers and potential employers
 - If the content contains factual inaccuracies, incorrect technical claims, or misleading explanations, you must correct them or clearly flag them
 - If technical reasoning is weak or missing, strengthen it or ask for clarification
+- Target video length: ~10 minutes (~1,500 words of narration)
 
 ---
 
