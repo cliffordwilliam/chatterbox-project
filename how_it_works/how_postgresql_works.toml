@@ -1,0 +1,383 @@
+[[slides]]
+lang = "md"
+text = """
+# How PostgreSQL Works
+## Understanding Database Architecture
+"""
+voice = "This video explains how PostgreSQL works at a depth relevant for backend developers."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# The Foundation: CPU Architecture
+"""
+voice = "To understand PostgreSQL, we need to start with how computers execute programs."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# CPU Cores
+- Core A
+- Core B
+- Core C
+- Core D
+"""
+voice = "Modern CPUs contain multiple cores. Each core can execute instructions independently."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# CPU Cores
+- Core A → Process
+- Core B → Process
+- Core C → Process
+- Core D → Process
+"""
+voice = "Each core can work on one process at a time. This is the fundamental execution model."
+transition = "morph"
+
+[[slides]]
+lang = "md"
+text = """
+# More Processes Than Cores
+
+Available:
+- Core A
+- Core B
+
+Waiting:
+- Process 1
+- Process 2
+- Process 3
+- Process 4
+"""
+voice = "You can run more processes than you have cores. The operating system makes this possible through context switching."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Context Switching
+
+The OS rapidly switches which process each core executes.
+This creates the illusion of parallel execution.
+"""
+voice = "Context switching allows cores to alternate between processes. Think of two chefs rotating between four dishes. Each rotation has overhead. The operating system must save where one process left off and load the next process state."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Process Definition
+
+A process is:
+"""
+voice = "So what exactly is a process?"
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Process Definition
+
+A process is:
+- Compiled machine code
+- Allocated memory region
+- Execution state managed by the OS
+"""
+voice = "A process is a running program. It has machine instructions the CPU can execute. It has memory allocated by the operating system."
+transition = "morph"
+
+[[slides]]
+lang = "md"
+text = """
+# From Code to Process
+
+source.cpp
+    ↓ compile
+binary executable
+    ↓ OS loads
+memory allocated
+    ↓ CPU executes
+running process
+"""
+voice = "When you compile C plus plus code into a binary and run it, the OS allocates memory. The CPU begins executing instructions."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Memory Regions
+
+Each process receives:
+- Stack memory
+- Heap memory
+- Code segment
+- Data segment
+"""
+voice = "Every process gets its own isolated memory region, protected by the operating system. Process A cannot access Process B memory. This isolation is fundamental to system stability."
+transition = "fade"
+
+[[slides]]
+lang = "cpp"
+text = """
+# Why Memory Matters
+```
+std::string message = "hello";
+int counter = 42;
+User* user = new User();
+```
+"""
+voice = "Every variable your program uses consumes memory. The stack holds local variables and function calls. The heap holds dynamically allocated objects."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Memory Problems
+
+Memory leak:
+- Heap allocation without deallocation
+- Memory usage grows over time
+
+Stack overflow:
+- Too many function calls
+- Recursion too deep
+"""
+voice = "Memory leaks happen when you allocate heap memory but never free it. Stack overflow occurs when function calls exceed stack space. Both exhaust your memory region."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Foundation Recap
+
+CPU
+  → Cores
+    → Processes
+      → Memory regions
+"""
+voice = "CPUs have cores that execute processes. Each process has an isolated memory region. This is the foundation."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# PostgreSQL Process Model
+
+When you start PostgreSQL:
+"""
+voice = "Now let us examine how PostgreSQL uses this model."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# PostgreSQL Process Model
+
+When you start PostgreSQL:
+- One main process starts
+- Called the postmaster
+"""
+voice = "PostgreSQL starts as a single process called the postmaster. This is the parent process that manages everything."
+transition = "morph"
+
+[[slides]]
+lang = "md"
+text = """
+# Client Connections
+
+Client initiates TCP connection
+    ↓
+Postmaster accepts connection
+    ↓
+Postmaster forks new child process
+    ↓
+Child handles all client requests
+"""
+voice = "When a client connects via TCP, the postmaster creates a dedicated child process for that connection. One connection equals one child process."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Multiple Connections
+
+Postmaster
+  ├─ Child Process 1 ← Client A
+  ├─ Child Process 2 ← Client B
+  └─ Child Process 3 ← Client C
+"""
+voice = "Each client connection gets its own dedicated child process. This is a core design decision in PostgreSQL."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Design Decision: Processes vs Threads
+"""
+voice = "Why does PostgreSQL use multiple processes instead of multiple threads?"
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Multi-threaded Model
+
+One Process
+  ├─ Thread A (own stack)
+  ├─ Thread B (own stack)
+  └─ Thread C (own stack)
+  
+Shared heap memory
+
+Advantage: Lower memory usage
+Risk: One crash kills everything
+"""
+voice = "With threads, you have one process with multiple threads sharing a heap. Memory efficient, but one thread crash kills the entire process."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Multi-process Model
+
+Process A (isolated memory)
+Process B (isolated memory)
+Process C (isolated memory)
+
+Advantage: Crash isolation
+Cost: Higher memory usage
+"""
+voice = "With multiple processes, each has isolated memory. If one crashes, others continue running. This costs more memory but provides fault isolation."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# PostgreSQL Design Choice
+
+PostgreSQL uses multi-process architecture for:
+- Fault isolation
+- Stability over efficiency
+- Crash resilience
+"""
+voice = "PostgreSQL chose the multi process model when designed in the 1980s and 1990s. It has kept this architecture. If one client connection crashes, others remain unaffected. Stability over memory efficiency."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Shared Memory Despite Processes
+
+Even with isolated processes:
+- Shared memory segment exists
+- Used for locks
+- Used for shared buffer cache
+"""
+voice = "Despite having separate processes, PostgreSQL uses shared memory for coordination. The lock table tracks which rows are currently locked. The buffer cache holds frequently accessed data to reduce disk I O."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Connection Pooling
+
+Problem: TCP handshakes are expensive
+
+Solution: Connection pools
+- Maintain open connections
+- Reuse across requests
+- Amortize handshake cost
+"""
+voice = "Creating TCP connections is expensive. Connection pooling maintains open connections that can be reused. This avoids repeated handshake overhead."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Client Architecture Varies
+
+Node.js:
+- Single process
+- Single thread
+- Event loop for concurrency
+
+Python:
+- Multiple processes possible
+- Multiple threads possible
+- Framework dependent
+"""
+voice = "Different languages handle concurrency differently. Node runs one process with one thread using an event loop. Python can use multiple processes or threads, often configured through frameworks like Uvicorn."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Complete System View
+
+Application tier:
+- Node App A (pool: 3 connections)
+- Node App B (pool: 3 connections)
+
+Database tier:
+- Postmaster process
+- Child process 1 ← App A connection 1
+- Child process 2 ← App A connection 2
+- Child process 3 ← App A connection 3
+- Child process 4 ← App B connection 1
+- Child process 5 ← App B connection 2
+- Child process 6 ← App B connection 3
+"""
+voice = "In a real system, each application maintains a connection pool. Each pooled connection corresponds to one PostgreSQL child process. PostgreSQL max connections setting limits how many children can exist. Beyond that limit, new connection attempts are rejected."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Process Landscape
+
+Total running processes:
+- 1 postmaster
+- 2 application processes
+- 6 backend child processes
+- Background workers (not shown)
+
+All scheduled across CPU cores
+"""
+voice = "You end up with many processes. The operating system schedules them across available CPU cores using context switching."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Network Communication
+
+Same machine:
+- Localhost loopback interface
+- TCP over 127.0.0.1
+- No physical network
+
+Different machines:
+- Physical network interface
+- Standard TCP/IP
+"""
+voice = "When running on the same machine, communication uses the loopback interface. Over a network, standard TCP I P applies. Both use sockets and ports."
+transition = "fade"
+
+[[slides]]
+lang = "md"
+text = """
+# Core Concepts Summary
+
+1. PostgreSQL uses multi-process architecture
+2. One child process per client connection
+3. Processes are isolated but share memory for coordination
+4. Connection pooling amortizes handshake costs
+5. OS schedules all processes across CPU cores
+"""
+voice = "PostgreSQL is a multi process database. Each connection gets a dedicated child process. Processes coordinate through shared memory. The operating system handles scheduling across cores. That covers how PostgreSQL works."
+transition = "fade"
