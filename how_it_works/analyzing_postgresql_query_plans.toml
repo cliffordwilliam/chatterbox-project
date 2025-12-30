@@ -1,0 +1,534 @@
+[[slides]]
+lang = "md"
+text = """
+# Analyzing PostgreSQL Query Plans
+"""
+voice = "This video explains how to analyze PostgreSQL query execution plans using explain and explain analyze."
+
+[[slides]]
+lang = "sql"
+text = """
+create table users (
+	id serial primary key,
+	username varchar(50)
+);
+"""
+voice = "I create a users table. The eye dee is serial, which is an auto incrementing integer.. Primary key adds a unique constraint and an index. Username has a maximum of fifty characters."
+
+[[slides]]
+lang = "sql"
+text = """
+create table posts (
+	id serial primary key,
+	user_id integer,
+	title varchar(200)
+);
+"""
+voice = "Next, I create a posts table. It has an eye dee, a user eye dee reference, and a title with two hundred character limit."
+
+[[slides]]
+lang = "sql"
+text = """
+insert into users (username) 
+select 'user' || i 
+from generate_series(1, 10000) i;
+"""
+voice = "I insert ten thousand users. Each username is the word user followed by a number."
+
+[[slides]]
+lang = "sql"
+text = """
+insert into posts (user_id, title) 
+select (random() * 9999 + 1)::integer, 'title' || i 
+from generate_series(1, 50000) i;
+"""
+voice = "I insert fifty thousand posts. Each post references a random user eye dee. Each title is the word title followed by a number."
+
+[[slides]]
+lang = "sql"
+text = """
+select * from users where username = 'user1';
+"""
+voice = "Now I test a simple query. Find the user with username user1."
+
+[[slides]]
+lang = "sql"
+text = """
+explain select * from users where username = 'user1';
+"""
+voice = "I add explain before the query. This shows the execution plan PostgreSQL will use without actually running it."
+
+[[slides]]
+lang = "md"
+text = """
+                       QUERY PLAN
+--------------------------------------------------------
+ Seq Scan on users  (cost=0.00..180.00 rows=1 width=12)
+   Filter: ((username)::text = 'user1'::text)
+(2 rows)
+"""
+voice = "PostgreSQL returns its predicted execution plan. This shows how it will execute the query and estimates the cost."
+
+[[slides]]
+lang = "md"
+highlight = [3]
+text = """
+                       QUERY PLAN
+--------------------------------------------------------
+ Seq Scan on users  (cost=0.00..180.00 rows=1 width=12)
+   Filter: ((username)::text = 'user1'::text)
+(2 rows)
+"""
+voice = "Sequential scan checks every row. Cost zero point zero zero to return the first row. Cost one eighty to scan all rows. It expects to find one row that is twelve bytes wide."
+
+[[slides]]
+lang = "md"
+highlight = [4]
+text = """
+                       QUERY PLAN
+--------------------------------------------------------
+ Seq Scan on users  (cost=0.00..180.00 rows=1 width=12)
+   Filter: ((username)::text = 'user1'::text)
+(2 rows)
+"""
+voice = "The filter shows the condition. It compares username against the literal string user1. Both are cast to text for comparison."
+
+[[slides]]
+lang = "md"
+text = """
+                       QUERY PLAN
+--------------------------------------------------------
+ Seq Scan on users  (cost=0.00..180.00 rows=1 width=12)
+   Filter: ((username)::text = 'user1'::text)
+(2 rows)
+"""
+voice = "This plan is expected. Without an index on username, PostgreSQL must scan every row. The width estimate is reasonable for a varchar 50 column."
+
+[[slides]]
+lang = "sql"
+text = """
+explain analyze select * from users where username = 'user1';
+"""
+voice = "explain analyze actually runs the query and shows what happened. This gives real timing data, not just estimates."
+
+[[slides]]
+lang = "md"
+text = """
+                                            QUERY PLAN
+--------------------------------------------------------------------------------------------------
+ Seq Scan on users  (cost=0.00..180.00 rows=1 width=12) (actual time=0.012..0.615 rows=1 loops=1)
+   Filter: ((username)::text = 'user1'::text)
+   Rows Removed by Filter: 9999
+ Planning Time: 0.041 ms
+ Execution Time: 0.626 ms
+(5 rows)
+"""
+voice = "It used a sequential scan. Cost zero point zero zero to find the first row, cost one eighty to scan all. Found one row of twelve bytes. Took zero point zero one two milliseconds to find the first row. Took zero point six one five milliseconds total. Found one row in one loop."
+
+[[slides]]
+lang = "md"
+highlight = [4, 5, 6, 7]
+text = """
+                                            QUERY PLAN
+--------------------------------------------------------------------------------------------------
+ Seq Scan on users  (cost=0.00..180.00 rows=1 width=12) (actual time=0.012..0.615 rows=1 loops=1)
+   Filter: ((username)::text = 'user1'::text)
+   Rows Removed by Filter: 9999
+ Planning Time: 0.041 ms
+ Execution Time: 0.626 ms
+(5 rows)
+"""
+voice = "The filter compared username to user one, both cast to text. It removed nine nine nine nine rows. Planning took zero point zero four one milliseconds. Execution took zero point six two six milliseconds."
+
+[[slides]]
+lang = "md"
+highlight = [5]
+text = """
+                                            QUERY PLAN
+--------------------------------------------------------------------------------------------------
+ Seq Scan on users  (cost=0.00..180.00 rows=1 width=12) (actual time=0.012..0.615 rows=1 loops=1)
+   Filter: ((username)::text = 'user1'::text)
+   Rows Removed by Filter: 9999
+ Planning Time: 0.041 ms
+ Execution Time: 0.626 ms
+(5 rows)
+"""
+voice = "It checked all ten thousand rows. Sequential scan doesn’t scale well as the table grows. I can improve this with an index."
+
+[[slides]]
+lang = "sql"
+text = """
+create index idx_users_username on users(username);
+"""
+voice = "I create an index on username. This should speed up lookups on this column."
+
+[[slides]]
+lang = "md"
+text = """
+                                                        QUERY PLAN
+---------------------------------------------------------------------------------------------------------------------------
+ Index Scan using idx_users_username on users  (cost=0.29..8.30 rows=1 width=12) (actual time=0.041..0.041 rows=1 loops=1)
+   Index Cond: ((username)::text = 'user1'::text)
+ Planning Time: 0.548 ms
+ Execution Time: 0.060 ms
+(4 rows)
+"""
+voice = "Now I run the same query with explain analyze again. It uses an index scan with the new index."
+
+[[slides]]
+lang = "md"
+text = """
+Before:
+- Sequential Scan
+- Cost: 0.00 -> 180.00
+- Time: 0.012 ms -> 0.615 ms
+- Rows Removed: 9999
+
+After:
+- Index Scan
+- Cost: 0.29 -> 8.30
+- Time: 0.041 ms -> 0.041 ms
+- Rows Removed: 0
+"""
+voice = "Comparison shows cost increased slightly from zero to zero point two nine for first row. But execution cost dropped to eight point three zero. Execution time dropped to zero point zero four one milliseconds. No rows filtered out. It found the row directly."
+
+[[slides]]
+lang = "md"
+text = """
+Before:
+- Sequential Scan: O(n)
+- Checks every row
+
+After:
+- Index Scan: O(log n)
+- Uses B-tree structure
+"""
+voice = "This changes time complexity from O of n to O of log n. Sequential scan is linear time. Index scan uses a B tree structure for logarithmic time."
+
+[[slides]]
+lang = "sql"
+text = """
+explain analyze 
+select users.username, posts.title 
+from users 
+join posts on posts.user_id = users.id 
+where users.username = 'user1';
+"""
+voice = "Now I test a join query. Get user one and their posts. I only want username and title in the response."
+
+[[slides]]
+lang = "md"
+text = """
+                                                              QUERY PLAN
+---------------------------------------------------------------------------------------------------------------------------------------
+ Hash Join  (cost=8.31..958.62 rows=5 width=18) (actual time=4.830..4.832 rows=0 loops=1)
+   Hash Cond: (posts.user_id = users.id)
+   ->  Seq Scan on posts  (cost=0.00..819.00 rows=50000 width=14) (actual time=0.004..2.290 rows=50000 loops=1)
+   ->  Hash  (cost=8.30..8.30 rows=1 width=12) (actual time=0.034..0.034 rows=1 loops=1)
+         Buckets: 1024  Batches: 1  Memory Usage: 9kB
+         ->  Index Scan using idx_users_username on users  (cost=0.29..8.30 rows=1 width=12) (actual time=0.024..0.025 rows=1 loops=1)
+               Index Cond: ((username)::text = 'user1'::text)
+ Planning Time: 0.770 ms
+ Execution Time: 4.901 ms
+(9 rows)
+"""
+voice = "The join produces multiple operations. Not just one scan. Let me walk through each step."
+
+[[slides]]
+lang = "md"
+highlight = [8]
+text = """
+                                                              QUERY PLAN
+---------------------------------------------------------------------------------------------------------------------------------------
+ Hash Join  (cost=8.31..958.62 rows=5 width=18) (actual time=4.830..4.832 rows=0 loops=1)
+   Hash Cond: (posts.user_id = users.id)
+   ->  Seq Scan on posts  (cost=0.00..819.00 rows=50000 width=14) (actual time=0.004..2.290 rows=50000 loops=1)
+   ->  Hash  (cost=8.30..8.30 rows=1 width=12) (actual time=0.034..0.034 rows=1 loops=1)
+         Buckets: 1024  Batches: 1  Memory Usage: 9kB
+         ->  Index Scan using idx_users_username on users  (cost=0.29..8.30 rows=1 width=12) (actual time=0.024..0.025 rows=1 loops=1)
+               Index Cond: ((username)::text = 'user1'::text)
+ Planning Time: 0.770 ms
+ Execution Time: 4.901 ms
+(9 rows)
+"""
+voice = "Step one. It does index scan to find user one. Cost eight point three zero. Time zero point zero two five milliseconds."
+
+[[slides]]
+lang = "md"
+highlight = [6, 7]
+text = """
+                                                              QUERY PLAN
+---------------------------------------------------------------------------------------------------------------------------------------
+ Hash Join  (cost=8.31..958.62 rows=5 width=18) (actual time=4.830..4.832 rows=0 loops=1)
+   Hash Cond: (posts.user_id = users.id)
+   ->  Seq Scan on posts  (cost=0.00..819.00 rows=50000 width=14) (actual time=0.004..2.290 rows=50000 loops=1)
+   ->  Hash  (cost=8.30..8.30 rows=1 width=12) (actual time=0.034..0.034 rows=1 loops=1)
+         Buckets: 1024  Batches: 1  Memory Usage: 9kB
+         ->  Index Scan using idx_users_username on users  (cost=0.29..8.30 rows=1 width=12) (actual time=0.024..0.025 rows=1 loops=1)
+               Index Cond: ((username)::text = 'user1'::text)
+ Planning Time: 0.770 ms
+ Execution Time: 4.901 ms
+(9 rows)
+"""
+voice = "Step two. Build a hash table from user one for the join. Uses nine kilobytes of memory."
+
+[[slides]]
+lang = "md"
+highlight = [5]
+text = """
+                                                              QUERY PLAN
+---------------------------------------------------------------------------------------------------------------------------------------
+ Hash Join  (cost=8.31..958.62 rows=5 width=18) (actual time=4.830..4.832 rows=0 loops=1)
+   Hash Cond: (posts.user_id = users.id)
+   ->  Seq Scan on posts  (cost=0.00..819.00 rows=50000 width=14) (actual time=0.004..2.290 rows=50000 loops=1)
+   ->  Hash  (cost=8.30..8.30 rows=1 width=12) (actual time=0.034..0.034 rows=1 loops=1)
+         Buckets: 1024  Batches: 1  Memory Usage: 9kB
+         ->  Index Scan using idx_users_username on users  (cost=0.29..8.30 rows=1 width=12) (actual time=0.024..0.025 rows=1 loops=1)
+               Index Cond: ((username)::text = 'user1'::text)
+ Planning Time: 0.770 ms
+ Execution Time: 4.901 ms
+(9 rows)
+"""
+voice = "Step three. Sequential scan all posts to find ones that match user one. Cost eight one nine. Time two point two nine zero milliseconds. This is slow."
+
+[[slides]]
+lang = "md"
+highlight = [3, 4]
+text = """
+                                                              QUERY PLAN
+---------------------------------------------------------------------------------------------------------------------------------------
+ Hash Join  (cost=8.31..958.62 rows=5 width=18) (actual time=4.830..4.832 rows=0 loops=1)
+   Hash Cond: (posts.user_id = users.id)
+   ->  Seq Scan on posts  (cost=0.00..819.00 rows=50000 width=14) (actual time=0.004..2.290 rows=50000 loops=1)
+   ->  Hash  (cost=8.30..8.30 rows=1 width=12) (actual time=0.034..0.034 rows=1 loops=1)
+         Buckets: 1024  Batches: 1  Memory Usage: 9kB
+         ->  Index Scan using idx_users_username on users  (cost=0.29..8.30 rows=1 width=12) (actual time=0.024..0.025 rows=1 loops=1)
+               Index Cond: ((username)::text = 'user1'::text)
+ Planning Time: 0.770 ms
+ Execution Time: 4.901 ms
+(9 rows)
+"""
+voice = "Step four. Hash join combines posts with user using the hash table. Time four point eight three two milliseconds total."
+
+[[slides]]
+lang = "md"
+text = """
+Steps:
+- Index scan: 0.025 ms
+- Sequential scan: 2.290 ms (slowest)
+- Hash join: 4.832 ms
+
+Total: 4.901 ms
+"""
+voice = "The sequential scan on posts is the bottleneck. I can speed this up with an index."
+
+[[slides]]
+lang = "sql"
+text = """
+create index idx_posts_user_id on posts(user_id);
+"""
+voice = "I create an index on user eye dee in the posts table. This should speed up lookups by user."
+
+[[slides]]
+lang = "md"
+highlight = [3, 11]
+text = """
+                                                           QUERY PLAN
+---------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=4.61..30.87 rows=5 width=18) (actual time=0.024..0.025 rows=0 loops=1)
+   ->  Index Scan using idx_users_username on users  (cost=0.29..8.30 rows=1 width=12) (actual time=0.018..0.019 rows=1 loops=1)
+         Index Cond: ((username)::text = 'user1'::text)
+   ->  Bitmap Heap Scan on posts  (cost=4.33..22.51 rows=5 width=14) (actual time=0.004..0.004 rows=0 loops=1)
+         Recheck Cond: (users.id = user_id)
+         ->  Bitmap Index Scan on idx_posts_user_id  (cost=0.00..4.33 rows=5 width=0) (actual time=0.001..0.002 rows=0 loops=1)
+               Index Cond: (user_id = users.id)
+ Planning Time: 0.670 ms
+ Execution Time: 0.076 ms
+(9 rows)
+"""
+voice = "Major improvement. Cost dropped to 30.87. Execution time dropped to 0.076 milliseconds. No more scanning all posts. Hash join changed to nested loop. Uses new index. Bitmap heap scan gets row values."
+
+[[slides]]
+lang = "sql"
+text = """
+explain analyze 
+select * from posts 
+where user_id < 100;
+"""
+voice = "Now I test a range query. Find posts where user eye dee is less than one hundred. This should return relatively few rows."
+
+[[slides]]
+lang = "md"
+text = """
+                                                          QUERY PLAN
+------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on posts  (cost=8.05..347.94 rows=485 width=18) (actual time=0.115..0.483 rows=469 loops=1)
+   Recheck Cond: (user_id < 100)
+   Heap Blocks: exact=247
+   ->  Bitmap Index Scan on idx_posts_user_id  (cost=0.00..7.93 rows=485 width=0) (actual time=0.078..0.078 rows=469 loops=1)
+         Index Cond: (user_id < 100)
+ Planning Time: 0.161 ms
+ Execution Time: 0.567 ms
+(7 rows)
+"""
+voice = "It uses the index to find matching posts. Then bitmap heap scan gets the values. Same strategy as the exact match. When result set is small, indexes help."
+
+[[slides]]
+lang = "sql"
+text = """
+explain analyze 
+select * from posts 
+where user_id < 5000;
+"""
+voice = "Now I increase the range. User eye dee less than five thousand. This returns about half the table. Indexes become less useful when results are large."
+
+[[slides]]
+lang = "md"
+text = """
+                                                QUERY PLAN
+----------------------------------------------------------------------------------------------------------
+ Seq Scan on posts  (cost=0.00..944.00 rows=25036 width=18) (actual time=0.013..2.596 rows=25027 loops=1)
+   Filter: (user_id < 5000)
+   Rows Removed by Filter: 24973
+ Planning Time: 0.072 ms
+ Execution Time: 3.263 ms
+(5 rows)
+"""
+voice = "PostgreSQL switched to sequential scan. It ignores the index. This is smart. When you want half the table, scanning directly is faster than using an index."
+
+[[slides]]
+lang = "md"
+text = """
+Index helps when:
+- Large table
+- Small result set
+- Usually under 5 to 15 percent
+
+Index does not help when:
+- Result set is large
+- Over 15 percent of table
+"""
+voice = "Indexes help when you find one in a million. They do not help when you want half a million in a million. PostgreSQL switches to sequential scan when you request more than five to fifteen percent of rows."
+
+[[slides]]
+lang = "sql"
+text = """
+explain analyze 
+select * from posts 
+where user_id < 500;
+"""
+voice = "Let me test the threshold. User eye dee less than five hundred is about five percent of the table."
+
+[[slides]]
+lang = "md"
+text = """
+                                                           QUERY PLAN
+---------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on posts  (cost=35.51..385.51 rows=2480 width=18) (actual time=0.239..0.818 rows=2488 loops=1)
+   Recheck Cond: (user_id < 500)
+   Heap Blocks: exact=318
+   ->  Bitmap Index Scan on idx_posts_user_id  (cost=0.00..34.89 rows=2480 width=0) (actual time=0.204..0.204 rows=2488 loops=1)
+         Index Cond: (user_id < 500)
+ Planning Time: 0.077 ms
+ Execution Time: 0.970 ms
+(7 rows)
+"""
+voice = "It still uses the index at 5 percent. We are just below the threshold. Any larger and it would switch to sequential scan."
+
+[[slides]]
+lang = "sql"
+text = """
+explain analyze 
+select * from posts 
+where user_id = 1 
+and title like 'title1%';
+"""
+voice = "Now I test a composite condition. Find posts where user eye dee is one and title starts with title one."
+
+[[slides]]
+lang = "md"
+text = """
+                                                        QUERY PLAN
+--------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on posts  (cost=4.33..22.52 rows=1 width=18) (actual time=0.016..0.016 rows=0 loops=1)
+   Recheck Cond: (user_id = 1)
+   Filter: ((title)::text like 'title1%'::text)
+   ->  Bitmap Index Scan on idx_posts_user_id  (cost=0.00..4.33 rows=5 width=0) (actual time=0.014..0.015 rows=0 loops=1)
+         Index Cond: (user_id = 1)
+ Planning Time: 0.063 ms
+ Execution Time: 0.101 ms
+(7 rows)
+"""
+voice = "It uses the user eye dee index first. Then filters by title with a LIKE pattern. It finds candidates by user eye dee first. Then checks the LIKE condition. This is not optimal."
+
+[[slides]]
+lang = "sql"
+text = """
+create index idx_posts_title_user_id on posts(title, user_id);
+"""
+voice = "I create a composite index on title and user eye dee. Let me run the same query again."
+
+[[slides]]
+lang = "md"
+text = """
+                                                           QUERY PLAN
+--------------------------------------------------------------------------------------------------------------------------------
+ Index Scan using idx_posts_title_user_id on posts  (cost=0.29..8.31 rows=1 width=18) (actual time=0.039..0.040 rows=0 loops=1)
+   Index Cond: (((title)::text like 'title1%'::text) AND (user_id = 1))
+ Planning Time: 0.346 ms
+ Execution Time: 0.065 ms
+(4 rows)
+"""
+voice = "One step only. Major improvement. It uses the new composite index. Both conditions are in the index condition now. Note that leading wildcards like percent title do not work with indexes."
+
+[[slides]]
+lang = "md"
+text = """
+Composite index ordering:
+
+idx_posts_title_user_id (title, user_id)
+
+Good for:
+- title alone
+- title then user_id
+
+Not good for:
+- user_id alone
+"""
+voice = "Index column order matters. Think of it like layers. This index is title then user eye dee. Good if you filter by title first. Not good if you filter by user eye dee alone."
+
+[[slides]]
+lang = "sql"
+text = """
+create index idx_posts_user_id_title on posts(user_id, title);
+"""
+voice = "I create another composite index. This one is user eye dee then title. Better order for my query pattern."
+
+[[slides]]
+lang = "md"
+text = """
+                                                           QUERY PLAN
+--------------------------------------------------------------------------------------------------------------------------------
+ Index Scan using idx_posts_user_id_title on posts  (cost=0.29..8.31 rows=1 width=18) (actual time=0.035..0.035 rows=0 loops=1)
+   Index Cond: ((user_id = 1) AND ((title)::text like 'title1%'::text))
+ Planning Time: 0.317 ms
+ Execution Time: 0.054 ms
+(4 rows)
+"""
+voice = "PostgreSQL picks the better ordered index. Execution time improved slightly."
+
+[[slides]]
+lang = "md"
+text = """
+# Summary
+
+- Explain shows planned execution
+- Explain analyze shows actual execution
+- Sequential scan checks every row
+- Indexes improve lookups dramatically
+- Indexes help when result sets are small
+- PostgreSQL switches to sequential scan for large result sets
+- Composite index column order matters
+- PostgreSQL query planner is smart
+"""
+voice = "This video covered how to diagnose query performance using explain and explain analyze. Indexes help when finding small result sets in large tables. PostgreSQL automatically chooses the best strategy based on query patterns."

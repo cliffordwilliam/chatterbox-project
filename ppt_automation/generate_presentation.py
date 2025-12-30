@@ -68,6 +68,14 @@ def build_color_map(style_name="dracula"):
     return color_map
 
 
+def blend_with_bg(color: RGBColor, bg=(0, 0, 0), alpha=0.4):
+    return RGBColor(
+        int(color[0] * alpha + bg[0] * (1 - alpha)),
+        int(color[1] * alpha + bg[1] * (1 - alpha)),
+        int(color[2] * alpha + bg[2] * (1 - alpha)),
+    )
+
+
 def add_code_with_highlighting(
     text_frame,
     code: str,
@@ -105,8 +113,12 @@ def add_code_with_highlighting(
 
             run.font.color.rgb = color_map.get(t, RGBColor(255, 255, 255))
 
+            base_color = color_map.get(t, RGBColor(255, 255, 255))
+
             if highlight_lines and not is_highlight:
-                run.font.color.brightness = -0.6
+                run.font.color.rgb = blend_with_bg(base_color, alpha=0.2)
+            else:
+                run.font.color.rgb = base_color
 
 
 def generate_presentation(toml_path: str):

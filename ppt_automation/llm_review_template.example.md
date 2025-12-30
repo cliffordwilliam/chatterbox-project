@@ -34,6 +34,7 @@ When reviewing or rewriting narration:
 - One idea per sentence
 - Maximum twenty words per sentence
 - If a sentence reads fine but sounds unclear when spoken, it must be rewritten
+- If a technical term is commonly abbreviated, it must be expanded or rewritten into its spoken form
 
 ---
 
@@ -170,6 +171,40 @@ If a sentence would normally require a forbidden character, rewrite it using onl
 - "dev-prod parity" → "development and production parity"
 
 Any violation in a `voice` field is an output error.
+
+---
+
+**Spoken Terminology and Pronunciation Rules**
+
+All narration is consumed through text to speech. Certain technical terms must be written to match their spoken form.
+
+Mandatory rules:
+
+- The abbreviation ID must always be written as "eye dee"
+- user_id must be spoken as "user eye dee"
+- Any reference to an identifier should use "eye dee" not "id"
+- SQL identifiers and column names must be rewritten into natural spoken English
+
+Examples:
+- id → eye dee
+- user_id → user eye dee
+- posts.user_id → user eye dee column on posts
+- primary key id → primary key eye dee
+
+Do not rely on text to speech pronunciation defaults.
+If a term would be mispronounced when read literally, rewrite it into its spoken form.
+
+Clarity for listeners takes priority over textual accuracy.
+
+Numeric Reading Conventions:
+
+- Decimal numbers must be spoken digit by digit
+- Large round counts may be spoken naturally
+- Costs in query plans should be spoken as shown by the planner
+- Example conversions:
+  - 180.00 → one eighty
+  - 0.041 → zero point zero four one
+  - 9999 → nine nine nine nine
 
 ---
 
