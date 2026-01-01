@@ -1,0 +1,47 @@
+[[slides]]
+text = """
+# Query Plans and Indexes
+"""
+voice = "This video explains query plans and how indexes work internally in PostgreSQL."
+
+[[slides]]
+text = """
+# B-tree Structure
+"""
+voice = "B tree is the default index structure in Postgres. It supports equality checks, range queries, and sorting. Hash indexes only support equality checks, which is why B tree is the default choice."
+
+[[slides]]
+text = """
+# Index Only Scan
+"""
+voice = "An index only scan reads values directly from the index. The database never touches the table. An index scan is different. It reads pointers from the index, then fetches rows from the table."
+
+[[slides]]
+text = """
+# Merge Join
+"""
+voice = "A merge join works when both inputs are already sorted. The database walks through both sorted sets and matches pairs. No sorting overhead is needed."
+
+[[slides]]
+text = """
+# Bitmap Scan
+"""
+voice = "A bitmap scan happens in two steps. First, bitmap index scan collects all block locations. Second, bitmap heap scan sorts those locations and reads blocks in order. This reduces random disk access but adds setup cost."
+
+[[slides]]
+text = """
+# Disk I/O Cost
+"""
+voice = "Jumping refers to random disk access. The term comes from HDD read heads physically moving. SSDs are faster but random access still costs more than sequential access. One I O equals one block read. Without ordering, the same block might be read multiple times."
+
+[[slides]]
+text = """
+# SELECT * Impact
+"""
+voice = "select star fetches all columns from the table. If you only need two columns, you still pay for all columns. Network payload increases. If those two columns exist in the index, the planner cannot use index only scan because select star forces a table visit."
+
+[[slides]]
+text = """
+# Finding Missing Indexes
+"""
+voice = "Run explain analyze to find missing indexes. Look for Rows Removed by Filter. High values mean a sequential scan touched many rows and discarded most of them. This is a strong signal that an index would help."

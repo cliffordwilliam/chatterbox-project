@@ -161,7 +161,7 @@ def generate_presentation(toml_path: str):
         add_code_with_highlighting(
             text_frame=text_frame,
             code=slide_data["text"],
-            lang=slide_data.get("lang", "text"),
+            lang=slide_data.get("lang", "md"),
             highlight_lines=slide_data.get("highlight"),
         )
 
