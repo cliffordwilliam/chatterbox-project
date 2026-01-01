@@ -1,0 +1,268 @@
+[[slides]]
+text = """
+# N+1 Query Problem
+"""
+voice = "This video explains the N plus one query problem in PostgreSQL."
+
+[[slides]]
+lang = "sql"
+text = """
+-- First query: Get all posts (1 query)
+SELECT * FROM posts LIMIT 10;
+
+-- One query per post to get the author (N queries)
+SELECT * FROM users WHERE id = 1;
+SELECT * FROM users WHERE id = 2;
+SELECT * FROM users WHERE id = 3;
+-- ... 10 queries total
+"""
+voice = "The N plus one problem happens when you fetch a list with one query, then fetch related data with N additional queries. The first query grabs ten posts. Then you execute ten separate queries to get each post's author. This pattern is inefficient. Each database round trip adds latency. You execute eleven queries when one would work. The cost scales linearly with the number of records."
+
+[[slides]]
+lang = "sql"
+text = """
+SELECT 
+    posts.id,
+    posts.title,
+    posts.user_id,
+    users.username
+FROM posts
+JOIN users ON users.id = posts.user_id
+LIMIT 10;
+"""
+voice = "The solution is to use a join. This query retrieves posts and authors in one round trip. Let me walk through each part."
+
+[[slides]]
+lang = "sql"
+highlight = [2, 3, 4, 5]
+text = """
+SELECT 
+    posts.id,
+    posts.title,
+    posts.user_id,
+    users.username
+FROM posts
+JOIN users ON users.id = posts.user_id
+LIMIT 10;
+"""
+voice = "The select clause specifies which columns to return. We grab post eye dee, post title, post user eye dee, and username from the users table."
+
+[[slides]]
+lang = "sql"
+highlight = [6]
+text = """
+SELECT 
+    posts.id,
+    posts.title,
+    posts.user_id,
+    users.username
+FROM posts
+JOIN users ON users.id = posts.user_id
+LIMIT 10;
+"""
+voice = "The from clause specifies the primary table. We iterate over posts as the left side of the join."
+
+[[slides]]
+lang = "sql"
+highlight = [7]
+text = """
+SELECT 
+    posts.id,
+    posts.title,
+    posts.user_id,
+    users.username
+FROM posts
+JOIN users ON users.id = posts.user_id
+LIMIT 10;
+"""
+voice = "The join clause brings in the users table as the right side. The on condition specifies how rows match. Here we match when the user eye dee in the posts table equals the eye dee in the users table."
+
+[[slides]]
+lang = "sql"
+highlight = [8]
+text = """
+SELECT 
+    posts.id,
+    posts.title,
+    posts.user_id,
+    users.username
+FROM posts
+JOIN users ON users.id = posts.user_id
+LIMIT 10;
+"""
+voice = "The limit clause restricts the result to ten rows. This is an inner join by default. Only posts with matching users appear in the result. Posts without a valid user eye dee are excluded."
+
+[[slides]]
+lang = "sql"
+highlight = [7]
+text = """
+SELECT 
+    posts.id,
+    posts.title,
+    posts.user_id,
+    users.username
+FROM posts
+JOIN users ON users.id = posts.user_id
+LIMIT 10;
+"""
+voice = "The key takeaway is this. When you need related data, use a join. Do not fetch relations in a loop."
+
+[[slides]]
+lang = "js"
+text = """
+// Get posts
+const posts = await db.query('SELECT * FROM posts LIMIT 10');
+
+// For each post, get comments (N+1!)
+for (let post of posts) {
+    post.comments = await db.query(
+        'SELECT * FROM comments WHERE post_id = $1',
+        [post.id]
+    );
+}
+"""
+voice = "Here is another example. You want posts with their comments. The code above fetches posts, then loops through each post to fetch comments. This creates the N plus one problem again."
+
+[[slides]]
+lang = "sql"
+text = """
+SELECT 
+    posts.id,
+    posts.title,
+    comments.id AS comment_id,
+    comments.content AS comment_content
+FROM posts
+LEFT JOIN comments ON comments.post_id = posts.id
+WHERE posts.id IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+"""
+voice = "Use aliases to prevent naming conflicts. Both tables have an eye dee column. We alias them as comment eye dee and comment content. This query fetches posts one through ten and includes all their comments. The left join ensures posts without comments still appear."
+
+[[slides]]
+lang = "sql"
+text = """
+SELECT 
+    posts.id,
+    posts.title,
+    COUNT(comments.id) AS comment_count
+FROM posts
+LEFT JOIN comments ON comments.post_id = posts.id
+GROUP BY posts.id, posts.title
+LIMIT 10;
+"""
+voice = "If you only need the count, use an aggregate function. We group by post eye dee and title. This collapses duplicate post rows into one. The count function sums the number of comments per post. The left join includes posts with zero comments. The limit returns the first ten rows."
+
+[[slides]]
+text = """
+Given these tables:
+- orders (id, customer_id, total)
+- customers (id, name, email)
+- order_items (id, order_id, product_name, quantity)
+"""
+voice = "Let me show a more complex example. You want to display twenty recent orders with customer name and item count."
+
+[[slides]]
+lang = "sql"
+text = """
+SELECT 
+    orders.id, 
+    orders.total, 
+    customers.name, 
+    COUNT(order_items.id) AS item_count
+FROM orders
+JOIN customers ON orders.customer_id = customers.id
+LEFT JOIN order_items ON order_items.order_id = orders.id
+GROUP BY orders.id, orders.total, customers.name
+ORDER BY orders.id DESC
+LIMIT 20;
+"""
+voice = "Here is the breakdown."
+
+[[slides]]
+lang = "sql"
+highlight = [2, 3, 4, 5]
+text = """
+SELECT 
+    orders.id, 
+    orders.total, 
+    customers.name, 
+    COUNT(order_items.id) AS item_count
+FROM orders
+JOIN customers ON orders.customer_id = customers.id
+LEFT JOIN order_items ON order_items.order_id = orders.id
+GROUP BY orders.id, orders.total, customers.name
+ORDER BY orders.id DESC
+LIMIT 20;
+"""
+voice = "We select order eye dee to identify each order. Total shows the order amount. Customer name identifies who placed it. Item count aggregates the number of items per order."
+
+[[slides]]
+lang = "sql"
+highlight = [7]
+text = """
+SELECT 
+    orders.id, 
+    orders.total, 
+    customers.name, 
+    COUNT(order_items.id) AS item_count
+FROM orders
+JOIN customers ON orders.customer_id = customers.id
+LEFT JOIN order_items ON order_items.order_id = orders.id
+GROUP BY orders.id, orders.total, customers.name
+ORDER BY orders.id DESC
+LIMIT 20;
+"""
+voice = "We use an inner join for customers. This excludes any orders without a valid customer eye dee. Every order must have a customer."
+
+[[slides]]
+lang = "sql"
+highlight = [8]
+text = """
+SELECT 
+    orders.id, 
+    orders.total, 
+    customers.name, 
+    COUNT(order_items.id) AS item_count
+FROM orders
+JOIN customers ON orders.customer_id = customers.id
+LEFT JOIN order_items ON order_items.order_id = orders.id
+GROUP BY orders.id, orders.total, customers.name
+ORDER BY orders.id DESC
+LIMIT 20;
+"""
+voice = "We use a left join for order items. This includes orders even if they have zero items. Empty orders still appear in the result."
+
+[[slides]]
+lang = "sql"
+highlight = [9]
+text = """
+SELECT 
+    orders.id, 
+    orders.total, 
+    customers.name, 
+    COUNT(order_items.id) AS item_count
+FROM orders
+JOIN customers ON orders.customer_id = customers.id
+LEFT JOIN order_items ON order_items.order_id = orders.id
+GROUP BY orders.id, orders.total, customers.name
+ORDER BY orders.id DESC
+LIMIT 20;
+"""
+voice = "The group by clause collapses duplicate order rows. PostgreSQL requires all non aggregated columns in the select to appear in group by. That is why we include order eye dee, total, and customer name."
+
+[[slides]]
+lang = "sql"
+highlight = [10]
+text = """
+SELECT 
+    orders.id, 
+    orders.total, 
+    customers.name, 
+    COUNT(order_items.id) AS item_count
+FROM orders
+JOIN customers ON orders.customer_id = customers.id
+LEFT JOIN order_items ON order_items.order_id = orders.id
+GROUP BY orders.id, orders.total, customers.name
+ORDER BY orders.id DESC
+LIMIT 20;
+"""
+voice = "Recent means newest first. Higher eye dee values represent newer records. We order by eye dee descending to get the most recent orders at the top."

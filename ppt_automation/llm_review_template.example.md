@@ -1,4 +1,4 @@
-# Dev Log Review Template
+# Review Template
 
 **Context**
 I am building a real-world order management system. The client is family—two people running a business on pen and paper. I'm documenting the development process through public YouTube dev logs.
@@ -79,31 +79,7 @@ Optimize for:
 
 1. Return the **revised TOML**
 
-2. Then provide a **change log** with the following structure for each change:
-
-```
-## Change N: [Brief description]
-
-**What was changed:**
-[Specific content modification]
-
-**Why it was changed:**
-[Reasoning behind the change]
-
-**Category:**
-[ ] Technical correctness
-[ ] Clarity/structure
-[ ] Narrative flow
-[ ] Authenticity/tone
-[ ] Missing context
-
-**Severity:**
-[ ] Critical (factual error or misleading claim)
-[ ] Important (weakens credibility or clarity)
-[ ] Minor (polish or flow improvement)
-```
-
-3. If you identify **technical concerns** that you cannot resolve without more information, flag them separately:
+2. If you identify **technical concerns** that you cannot resolve without more information, flag them separately:
 
 ```
 ## Technical Questions for Review:
