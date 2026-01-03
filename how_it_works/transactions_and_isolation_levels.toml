@@ -1,0 +1,462 @@
+[[slides]]
+text = """
+# Transactions and Isolation Levels
+"""
+voice = "This video explains transactions and isolation levels in PostgreSQL."
+
+[[slides]]
+lang="js"
+text = """
+// Alice's request
+const seat = await db.query('SELECT * FROM seats WHERE id = 1');
+if (seat.available) {
+    // Bob's request runs here at the same time
+    await db.query('UPDATE seats SET available = false WHERE id = 1');
+    return "Seat booked!";
+}
+"""
+voice = "Race conditions break business rules. This is not about performance. We use database tools to prevent conflicting outcomes."
+
+[[slides]]
+highlight = [5]
+lang="js"
+text = """
+// Alice's request
+const seat = await db.query('SELECT * FROM seats WHERE id = 1');
+if (seat.available) {
+    // Bob's request runs here at the same time
+    await db.query('UPDATE seats SET available = false WHERE id = 1');
+    return "Seat booked!";
+}
+"""
+voice = "This example allows Alice and Bob to book the same seat. The code works but breaks business logic."
+
+[[slides]]
+highlight = [5]
+lang="js"
+text = """
+// Alice's request
+const seat = await db.query('SELECT * FROM seats WHERE id = 1');
+if (seat.available) {
+    // Bob's request runs here at the same time
+    await db.query('UPDATE seats SET available = false WHERE id = 1');
+    return "Seat booked!";
+}
+"""
+voice = "A race condition happens when the outcome depends on timing. If timing does not matter, it is not a race condition."
+
+[[slides]]
+text = """
+# Tools to Prevent Race Conditions
+1. Constraints
+2. Transactions
+3. Isolation Levels
+4. Row Locks
+"""
+voice = "These are common tools to prevent conflicting outcomes. PostgreSQL exposes them through explicit transactions."
+
+[[slides]]
+text = """
+# ACID Properties
+- Atomicity
+- Consistency
+- Isolation
+- Durability
+"""
+voice = "Every query in PostgreSQL runs in an implicit transaction. Transactions follow ACID principles."
+
+[[slides]]
+highlight = [2]
+text = """
+# ACID Properties
+- Atomicity
+- Consistency
+- Isolation
+- Durability
+"""
+voice = "Atomicity means if any part fails, the whole transaction fails. No partial updates are allowed."
+
+[[slides]]
+highlight = [3]
+text = """
+# ACID Properties
+- Atomicity
+- Consistency
+- Isolation
+- Durability
+"""
+voice = "Consistency means the database enforces rules. For example, foreign keys prevent deleting referenced rows."
+
+[[slides]]
+highlight = [4]
+text = """
+# ACID Properties
+- Atomicity
+- Consistency
+- Isolation
+- Durability
+"""
+voice = "Isolation means uncommitted changes are never visible to other transactions."
+
+[[slides]]
+highlight = [5]
+text = """
+# ACID Properties
+- Atomicity
+- Consistency
+- Isolation
+- Durability
+"""
+voice = "Durability guarantees committed data persists to disk, even after crashes."
+
+[[slides]]
+lang="sql"
+highlight = [1, 6]
+text = """
+BEGIN;
+
+UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+
+COMMIT;
+"""
+voice = "Wrap queries inside BEGIN and COMMIT to mark them as one transaction."
+
+[[slides]]
+lang="sql"
+highlight = [4]
+text = """
+BEGIN;
+
+UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+
+COMMIT;
+"""
+voice = "If the update for account eye dee two fails, the entire transaction rolls back. Account eye dee one stays unchanged."
+
+[[slides]]
+text = """
+# Isolation Levels
+- Read Committed
+- Repeatable Read
+- Serializable
+"""
+voice = "PostgreSQL has three isolation levels. Each controls how transactions see data."
+
+[[slides]]
+highlight = [2]
+text = """
+# Isolation Levels
+- Read Committed
+- Repeatable Read
+- Serializable
+"""
+voice = "Read Committed shows live data. Each query sees the latest committed state. This is the default."
+
+[[slides]]
+highlight = [3]
+text = """
+# Isolation Levels
+- Read Committed
+- Repeatable Read
+- Serializable
+"""
+voice = "Repeatable Read shows a snapshot taken at transaction start. Data does not change during the transaction."
+
+[[slides]]
+highlight = [4]
+text = """
+# Isolation Levels
+- Read Committed
+- Repeatable Read
+- Serializable
+"""
+voice = "Serializable adds validation on top of Repeatable Read. It ensures transactions could run in some serial order."
+
+[[slides]]
+text = """
+# Performance Trade-offs
+
+Read Committed: Fastest, least protection
+Repeatable Read: Medium speed, snapshot consistency
+Serializable: Slowest, strongest guarantees
+
+More protection = More overhead = More retries
+
+Choose based on business needs, not performance.
+"""
+voice = "Stronger isolation levels cost more. Serializable is the slowest because it validates transaction ordering. But remember, correctness first, performance second. Pick the isolation level that meets your business requirements."
+
+[[slides]]
+lang="sql"
+highlight = [6, 9]
+text = """
+BEGIN;
+
+-- First read
+SELECT balance FROM accounts WHERE id = 1;  -- Returns 1000
+
+-- Bob commits an update here
+
+-- Second read in same transaction
+SELECT balance FROM accounts WHERE id = 1;  -- Returns 900
+
+COMMIT;
+"""
+voice = "In Read Committed, if another transaction commits between reads, you see the new value. Each query sees fresh data."
+
+[[slides]]
+lang="sql"
+text = """
+BEGIN;
+
+-- Lock the row, other transactions must wait
+SELECT * FROM seats 
+WHERE id = 1 
+FOR UPDATE;
+
+-- Check availability
+-- Other logic here
+
+UPDATE seats SET available = false WHERE id = 1;
+
+COMMIT;
+"""
+voice = "select for update locks the row. Concurrent transactions wait until this one commits. The waiting transaction then sees fresh data. Use this for short, simple logic."
+
+[[slides]]
+lang="sql"
+highlight = [1,6,8]
+text = """
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+
+SELECT balance FROM accounts WHERE id = 1;  -- Returns 1000
+
+-- Another transaction commits changes here
+
+SELECT balance FROM accounts WHERE id = 1;  -- Still returns 1000
+
+COMMIT;
+"""
+voice = "In Repeatable Read, you see a snapshot from transaction start. Queries always return the same data. Conflicting updates abort with a serialization error."
+
+[[slides]]
+text = """
+# When Does Repeatable Read Throw Errors?
+
+Error occurs when:
+- Your transaction tries to UPDATE or DELETE a row
+- Another committed transaction already modified that same row
+- Since your transaction started
+
+Error code: 40001 (serialization failure)
+
+Solution: ROLLBACK and retry with fresh snapshot
+"""
+voice = "Repeatable Read throws a serialization error when you try to update or delete a row that another transaction already changed. This prevents lost updates. Always handle error code four zero zero zero one with a retry."
+
+[[slides]]
+text = """
+# Serializable Validation
+
+Transaction one: Reads A, writes B
+Transaction two: Reads B, writes A
+
+Both use isolated snapshots.
+No valid serial ordering exists.
+PostgreSQL aborts one transaction.
+"""
+voice = "Serializable ensures that if no valid serial order exists for concurrent transactions, one transaction fails with a serialization error. Note that this is the same error as the one in the previous slide."
+
+[[slides]]
+text = """
+# Serializable: Concrete Example
+
+Transaction 1: Reads total balance ($1000)
+             Withdraws $600 from Account A
+
+Transaction 2: Reads total balance ($1000)
+             Withdraws $600 from Account B
+
+Constraint: Total balance must stay above $500
+
+Both see $1000, both think withdrawal is safe.
+Result: Total becomes $-200 (violates constraint!)
+
+Serializable detects this and aborts one transaction.
+"""
+voice = "Here is a real example. Two transactions read the same snapshot and both think they can safely withdraw. Without Serializable, the constraint gets violated. Serializable ensures transactions happen in a valid serial order."
+
+[[slides]]
+text = """
+# Write Skew (Why Serializable Matters)
+
+Doctor on-call schedule:
+- At least one doctor must be on-call
+- Currently: Alice and Bob both on-call
+
+Transaction 1 (Alice): Checks "Is Bob on-call? Yes." 
+                       Sets Alice off-call.
+
+Transaction 2 (Bob):   Checks "Is Alice on-call? Yes."
+                       Sets Bob off-call.
+
+Result: Nobody on-call! (Constraint violated)
+
+Repeatable Read allows this.
+Serializable prevents this.
+"""
+voice = "Write skew happens when two transactions read overlapping data and make decisions based on it. Both decisions are valid individually, but together they violate a constraint. Only Serializable catches this."
+
+[[slides]]
+text = """
+# Problem Solving Framework
+1. Constraints
+2. Read Committed
+3. Read Committed with Row Locks
+4. Repeatable Read
+5. Serializable
+"""
+voice = "Race condition patterns are endless. This framework tries approaches in order. Stop when one meets your business needs."
+
+[[slides]]
+highlight = [2]
+text = """
+# Problem Solving Framework
+1. Constraints
+2. Read Committed
+3. Read Committed with Row Locks
+4. Repeatable Read
+5. Serializable
+"""
+voice = "Use constraints to enforce database rules. Examples include unique keys and foreign keys."
+
+[[slides]]
+highlight = [3]
+text = """
+# Problem Solving Framework
+1. Constraints
+2. Read Committed
+3. Read Committed with Row Locks
+4. Repeatable Read
+5. Serializable
+"""
+voice = "Use Read Committed to always see the latest data. Good for read only endpoints. Not safe for multi step updates."
+
+[[slides]]
+highlight = [4]
+text = """
+# Problem Solving Framework
+1. Constraints
+2. Read Committed
+3. Read Committed with Row Locks
+4. Repeatable Read
+5. Serializable
+"""
+voice = "Use Read Committed with row locks to block concurrent transactions. The waiting transaction sees fresh data after the first completes."
+
+[[slides]]
+highlight = [5]
+text = """
+# Problem Solving Framework
+1. Constraints
+2. Read Committed
+3. Read Committed with Row Locks
+4. Repeatable Read
+5. Serializable
+"""
+voice = "Use Repeatable Read for a consistent snapshot. Conflicting external changes abort the transaction. Works well for single table updates."
+
+[[slides]]
+highlight = [6]
+text = """
+# Problem Solving Framework
+1. Constraints
+2. Read Committed
+3. Read Committed with Row Locks
+4. Repeatable Read
+5. Serializable
+"""
+voice = "Use Serializable when invariants span multiple tables. Transactions see a linearizable order. If no valid timeline exists, one aborts. This preserves global consistency."
+
+[[slides]]
+lang="js"
+text = """
+async function buyProduct(productId, userId) {
+    while (true) {
+        try {
+            await db.query('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+            
+            const stock = await db.query(
+                'SELECT inventory FROM stocks WHERE id = $1', [productId]
+            );
+            
+            if (stock.inventory <= 0) {
+                await db.query('ROLLBACK');
+                throw new Error('Out of stock');
+            }
+            
+            await db.query(
+                'UPDATE stocks SET inventory = inventory - 1 WHERE id = $1', 
+                [productId]
+            );
+            await db.query(
+                'INSERT INTO orders (product_id, user_id) VALUES ($1, $2)', 
+                [productId, userId]
+            );
+            
+            await db.query('COMMIT');
+            break;
+            
+        } catch (error) {
+            if (error.code === '40001') {
+                await db.query('ROLLBACK');
+                await sleep(Math.random() * 100);
+                continue;
+            }
+            await db.query('ROLLBACK');
+            throw error;
+        }
+    }
+}
+"""
+voice = "Use row locks for short transactions. Use Repeatable Read with retry for complex transactions. Error code four zero zero zero one means the snapshot changed."
+
+[[slides]]
+lang="sql"
+text = """
+ALTER TABLE stocks ADD COLUMN version INTEGER DEFAULT 0;
+
+-- Application handles optimistic locking
+BEGIN;
+
+SELECT inventory, version FROM stocks WHERE id = 1;
+
+UPDATE stocks 
+SET inventory = inventory - 1, version = version + 1 
+WHERE id = 1 AND version = 5;
+
+-- If affected rows equals zero, retry
+
+COMMIT;
+"""
+voice = "Optimistic locking reads live data without locks. Update only if the version matches. If someone else changed it, retry."
+
+[[slides]]
+text = """
+# Optimistic Locking in ORMs
+
+Prisma:
+@@map("stocks")
+version Int @default(0)
+
+TypeORM:
+@VersionColumn()
+version: number;
+
+Hibernate:
+@Version
+private int version;
+"""
+voice = "Most ORMs provide optimistic locking out of the box. They automatically increment the version column and retry on conflicts. This pattern uses Read Committed isolation level."
